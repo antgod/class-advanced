@@ -1,0 +1,13 @@
+<script>
+  function require(file) {
+    const exports = {};
+    (function(exports, code) {
+      eval(code);
+    })(exports, "var a = 1;exports.default = function(a, b) { return a + b };");
+    return exports;
+  }
+
+  var add = require('add.js').default;
+  console.log('add:', add(2, 4));
+
+</script>

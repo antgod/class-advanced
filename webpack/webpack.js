@@ -45,6 +45,7 @@ function getModuleInfo(file) {
 // const info = getModuleInfo('./src/index.js');
 // console.log('info :>> ', info);
 
+// 依赖收集
 const collectDeps = (() => {
   const depsGraph = {};
   const collectDeps = (filePath) => {

@@ -1,5 +1,5 @@
 <script>
-  function require(file) {
+  function require() {
     const exports = {};
     (function(exports, code) {
       eval(code);
@@ -7,7 +7,7 @@
     return exports;
   }
 
-  var add = require('add.js').default;
+  var add = require().default;
   console.log('add:', add(2, 4));
 
 </script>

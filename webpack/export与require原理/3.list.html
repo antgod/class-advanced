@@ -5,7 +5,8 @@
   // console.log('add:', add(2, 4));
 
   const entry = 'index.js';
-  (function(list, entry){
+  
+  (function(list){
     function require(file) {
       const exports = {};
       (function(exports, code) {
@@ -13,7 +14,7 @@
       })(exports, list[file]);
       return exports;
     }
-    require(entry);
+    require();
   })({
     'index.js': `
       var add = require('add.js').default;
@@ -22,6 +23,6 @@
     'add.js': `
       var a = 1;exports.default = function(a, b) { return a + b };
     `,
-  }, entry);
+  });
 
 </script>

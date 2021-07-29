@@ -20,9 +20,13 @@ function getModuleInfo(file) {
 
   traverse(ast, {
     ImportDeclaration({ node }) {
+      // 当前入口文件目录
       const dirname = path.dirname(file);
-      const abspath = "./" + path.join(dirname, node.source.value);
-      deps[node.source.value] = abspath;
+      // 依赖文件路径
+      const depPath = node.source.value;
+      // 计算依赖文件与webpack执行文件的相对路径
+      const absPath = path.join(dirname, depPath);
+      deps[depPath] = absPath;
     },
   });
 
@@ -30,73 +34,72 @@ function getModuleInfo(file) {
     presets: ["@babel/preset-env"],
   });
 
-  const info = {
+  return {
     file,
     deps,
     code,
   };
-
-  return info;
 }
 
+// Test
 // const info = getModuleInfo('./src/index.js');
-// console.log('info', info);
+// console.log('info :>> ', info);
 
-function getDeps(temp, { deps }) {
-  Object.keys(deps).forEach((key) => {
-    const child = getModuleInfo(deps[key]);
-    temp.push(child);
-    getDeps(temp, child);
-  });
-}
-
-// 获取入口的依赖分析
-function parseModules(file) {
-  const entry = getModuleInfo(file);
-  const temp = [entry];
+const collectDeps = (() => {
   const depsGraph = {};
-
-  getDeps(temp, entry);
-
-  temp.forEach((moduleInfo) => {
-    depsGraph[moduleInfo.file] = {
-      deps: moduleInfo.deps,
-      code: moduleInfo.code,
+  const collectDeps = (filePath) => {
+    const moduleInfo = getModuleInfo(filePath);
+    const { file, deps, code } = moduleInfo;
+  
+    depsGraph[file] = {
+      deps,
+      code,
     };
-  });
-  return depsGraph;
-}
+  
+    Object.keys(deps).map(key => {
+      const depAbsPath = deps[key];
+      collectDeps(depAbsPath);
+    });
+    return depsGraph;
+  }
+  return collectDeps;
+})();
 
-// const content = parseModules('./src/index.js')
-// console.log('object :>> ', content); 
+// Test
+// const depsGraph = collectDeps('./src/index.js')
+// console.log('object :>> ', depsGraph); 
+
+// 计算bundle内容
+function computeBundleContent(file) {
+  const depsGraph = JSON.stringify(collectDeps(file));
+  return `(function (graph) {
+    function require(file) {
+      var { deps, code } = graph[file];
+
+      function absRequire(relPath) {
+        return require(deps[relPath])
+      }
+      var exports = {};
+      (function (require, code) {
+        eval(code)
+      })(absRequire, code);
+      
+      return exports
+    }
+    require('${file}')
+  })(${depsGraph})`;
+}
 
 // 打bundle
-function bundle(file) {
-  const depsGraph = JSON.stringify(parseModules(file));
-  return `(function (graph) {
-        function require(file) {
-            function absRequire(relPath) {
-                return require(graph[file].deps[relPath])
-            }
-            var exports = {};
-            (function (require,exports,code) {
-                eval(code)
-            })(absRequire,exports,graph[file].code)
-            return exports
-        }
-        require('${file}')
-    })(${depsGraph})`;
+function bundle(entry, output) {
+  const bundleContent = computeBundleContent(entry);
+  const dir = path.dirname(output);
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+  fs.writeFileSync(output, bundleContent);
 }
 
-function dist(entry, dir, output) {
-  const content = bundle(entry);
-
-  !fs.existsSync(dir) && fs.mkdirSync(dir);
-
-  const outputFile = path.resolve(dir, output);
-
-  console.log(outputFile)
-  fs.writeFileSync(outputFile, content);
-}
-
-dist('./src/index.js', './dist', 'bundle.js');
+// Test
+bundle('./src/index.js', './dist/bundle.js');

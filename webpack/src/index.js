@@ -1,3 +1,3 @@
 import add from './add.js';
 
-console.log('res', add(3, 3));
+console.log('输出', add(3, 3));

@@ -1,12 +1,7 @@
 <script>
-  
-
-  // var add = require('add.js').default;
-  // console.log('add:', add(2, 4));
-
   const entry = 'index.js';
   
-  (function(list){
+  (function(list, entry){
     function require(file) {
       const exports = {};
       (function(exports, code) {
@@ -14,15 +9,15 @@
       })(exports, list[file]);
       return exports;
     }
-    require();
+    require(entry);
   })({
     'index.js': `
       var add = require('add.js').default;
-      console.log(add(2, 4));
+      console.log('输出', add(2, 4));
     `,
     'add.js': `
       var a = 1;exports.default = function(a, b) { return a + b };
     `,
-  });
+  }, entry);
 
 </script>

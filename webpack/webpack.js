@@ -71,23 +71,30 @@ const collectDeps = (() => {
 // console.log('object :>> ', depsGraph); 
 
 // 计算bundle内容
-function computeBundleContent(file) {
-  const depsGraph = JSON.stringify(collectDeps(file));
+function computeBundleContent(entry) {
+  const depsGraph = JSON.stringify(collectDeps(entry));
   return `(function (graph) {
     function require(file) {
       var { deps, code } = graph[file];
 
       function absRequire(relPath) {
+        console.log(file, deps, relPath);
+        // ./src/index.js {./add.js: "src/add.js", ./reduce.js: "src/reduce.js"} ./add.js
+        // 确保require执行时，返回依赖文件的exports
         return require(deps[relPath])
       }
       var exports = {};
       (function (require, code) {
-        eval(code)
+        // 第一次执行入口处: index.js代码，执行require时，递归调用require函数。
+        eval(code);
       })(absRequire, code);
       
+      // require函数返回依赖文件的exports。
       return exports
     }
-    require('${file}')
+
+    // 1. 传入入口处代码
+    require('${entry}')
   })(${depsGraph})`;
 }
 

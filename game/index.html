@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智云健康</title>
+  <link href="https://cdn.bootcdn.net/ajax/libs/normalize/8.0.1/normalize.css" rel="stylesheet">
+  <script src="https://gw.alipayobjects.com/os/lib/tinyjs/tiny/1.3.1/tiny.js"></script>
+</head>
+
+<body>
+  <script>
+    // 创建主程序
+    const { Application, Container, Sprite } = Tiny;
+
+    const app = new Application({
+      showFPS: true,
+      dpi: 2
+    });
+
+    // 创建场景
+    const scene = new Container()
+    const addBackgroundImage = () => {
+      const sprite = Sprite.fromImage('bg.png')
+      sprite.width = Tiny.WIN_SIZE.width
+      sprite.height = Tiny.WIN_SIZE.height
+      scene.addChild(sprite)
+    }
+
+
+
+
+    const addLuckyMoney = () => {
+      // 添加一个红包
+      const sprite = Sprite.fromImage('luckymoney.png');
+      sprite.width = 180;
+      sprite.height = 186;
+      sprite.x = 100;
+      sprite.y = 100;
+
+      scene.addChild(sprite);
+      return sprite;
+    }
+
+
+    // 执行动画
+    const action = (money) => {
+      const action = Tiny.MoveTo(2000, Tiny.point(100, Tiny.WIN_SIZE.height));
+      money.runAction(Tiny.RepeatForever(action));
+    }
+
+    window.onload = () => {
+      addBackgroundImage();
+      const money = addLuckyMoney();
+
+      // 启动场景
+      app.run(scene);
+     
+      action(money);
+
+      // 绑定点击/触事件
+      money.on('pointertap', (e) => {
+        money.removeActions();
+
+        const scaleAction = Tiny.ScaleBy(150, { scaleX: 1.2, scaleY: 1.2 });
+        money.runAction(scaleAction);
+        scaleAction.onComplete = () => {
+          scene.removeChild(money);
+        };
+      })
+
+      // 设置可点击
+      money.setEventEnabled(true);
+    }
+  </script>
+</body>
+
+</html>

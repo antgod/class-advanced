@@ -1,0 +1,42 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script>
+    var routers = [
+      { path: '/a', html: `<a href="javascript:goto('/b')">详情</a>` },
+      { path: '/b', html: `<a href="javascript:goto('/c')">修改</a>` },
+      { path: '/c', html: `<a href="javascript:goto('/a')">首页</a>` },
+      { path: '/history/test.html', html: `<a href="javascript:goto('/a')">列表</a>` },
+      { path: '/', html: `<a href="javascript:goto('/a')">列表</a>` },
+    ];
+
+    var goto = (url) => {
+      history.pushState(null, null, url);
+      doRoute();
+    };
+
+    var doRoute = () => {
+      const path = location.pathname;
+      const target = routers.find(item => item.path === path);
+      const routerView = document.querySelector('#router-view');
+      if (!target) {
+        routerView.innerHTML = `<h3>404</h3>`
+      } else {
+        routerView.innerHTML = target.html;
+      }
+    }
+
+    window.onhashchange = window.onload = doRoute;
+
+  </script>
+</head>
+
+<body>
+  <div id="router-view">原始</div>
+</body>
+
+</html>

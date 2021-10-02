@@ -7,29 +7,8 @@ const traverse = require('@babel/traverse').default;
 // 转换
 const babel = require('@babel/core');
 // 业务
-const { TRACE_PREFIX, TRACE_NAME } = require('./constants');
-const { collectTraceFragment } = require('./util/fragment');
-
-const createInterceptor = ({ types }) => {
-  return {
-    0: () => {
-      const o = types.arrayExpression([]);
-      const collection = types.variableDeclaration('const', [types.variableDeclarator(types.identifier(TRACE_NAME), o)]);
-      child.insertBefore(collection);
-    },
-    [body.length - 1]: () => {
-      const traceFragment = types.callExpression(
-        types.memberExpression(
-          types.identifier('console'),
-          types.identifier('log')
-        ),
-        [types.identifier(TRACE_NAME)]
-      )
-      const collection = types.expressionStatement(traceFragment);
-      child.insertAfter(collection);
-    }
-  }
-}
+const { TRACE_NAME } = require('./util/constants');
+const { collectTraceFragment, createInterceptor, findParentPath } = require('./util/common');
 
 // 获得单个文件的依赖
 function getModuleInfo(file) {
@@ -46,35 +25,89 @@ function getModuleInfo(file) {
       const body = path.get("body");
 
       body.forEach((child, index) => {
-        const interceptor = createInterceptor({ types });
+        const interceptor = createInterceptor({ types, body });
         if (typeof interceptor[index] === 'function') {
-          interceptor[index]();
+          interceptor[index](child);
         }
       })
     },
     ArrowFunctionExpression(path) {
       const { node } = path;
-      const params = node.params;
-      params.forEach(param => {
+      const params = node.params || [];
+      const fn = path.parent.id.name;
+
+      // 收集初始化参数
+      params.slice().reverse().forEach(param => {
         const { name } = param;
         if (name.indexOf(TRACE_NAME) === -1) {
-          const fragment = collectTraceFragment(TRACE_NAME, name, { types, path });
+          const fragment = collectTraceFragment(TRACE_NAME, name, { types, type: 'params' }, { fn });
           node.body.body.unshift(fragment);
         }
       });
     },
-
-    VariableDeclaration(path) {
+    FunctionDeclaration(path) {
       const { node } = path;
-      const declarations = node.declarations;
-      const name = declarations[0].id.name;
+      const { params } = node;
+      const { name: fn } = node.id || {};
+      // 收集初始化参数
+      params.slice().reverse().forEach(param => {
+        const { name } = param;
+        if (name.indexOf(TRACE_NAME) === -1) {
+          const fragment = collectTraceFragment(TRACE_NAME, name, { types, type: 'params' }, { fn });
+          node.body.body.unshift(fragment);
+        }
+      });
+    },
+    BinaryExpression(path) {
+      const { node } = path;
+      const { left, right, operator } = node;
+      const { name: leftName } = left;
+      const { name: rightName } = right;
+      const randomNumber = Math.floor(Math.random() * 100) + "";
+      if (leftName) {
+        const fragment = collectTraceFragment(TRACE_NAME, leftName, { types, type: operator }, { version: randomNumber });
+        const finalPath = findParentPath(path, { types: ['ReturnStatement', 'ReturnStatement', 'BinaryExpression', 'CallExpression'] });
+        finalPath.insertBefore(fragment);
+      }
 
-      if (name.indexOf(TRACE_NAME) === -1) {
-        const fragment = collectTraceFragment(TRACE_NAME, name, { types, path });
-        path.insertAfter(fragment);
+      if (rightName) {
+        const fragment = collectTraceFragment(TRACE_NAME, rightName, { types, type: operator }, { version: randomNumber });
+        const finalPath = findParentPath(path, { types: ['ReturnStatement', 'ReturnStatement', 'BinaryExpression', 'CallExpression'] });
+        finalPath.insertBefore(fragment);
       }
     },
-    // CallExpression({ node }) {
+    AssignmentExpression(path) {
+      const { node } = path;
+      const { left, right } = node;
+      const { name } = left;
+      const { value, name: rightName } = right;
+
+      const fragment = collectTraceFragment(TRACE_NAME, name, { types, type: 'assign' }, 
+        undefined, { value: rightName || String(value) });
+      path.insertBefore(fragment);
+    },
+    CallExpression(path) {
+      const { node } = path;
+      const { name, object } = node.callee;
+      if (object) {
+
+      } else if (name) {
+        const finalPath = findParentPath(path, { types: ['ReturnStatement', 'ReturnStatement', 'BinaryExpression', 'CallExpression'] });
+        if (finalPath) {
+          const fragment = collectTraceFragment(TRACE_NAME, name, { types, type: 'call' });
+          finalPath.insertBefore(fragment);
+        }
+      }
+    },
+    // VariableDeclaration(path) {
+    //   const { node } = path;
+    //   const declarations = node.declarations;
+    //   const name = declarations[0]?.id?.name || '';
+
+    //   if (name.indexOf(TRACE_NAME) === -1) {
+    //     const fragment = collectTraceFragment(TRACE_NAME, name, { types, type: 'defined' });
+    //     path.insertAfter(fragment);
+    //   }
     // },
   });
 
@@ -82,8 +115,8 @@ function getModuleInfo(file) {
     presets: ["@babel/preset-env"],
   });
 
-  fs.writeFileSync('./lib/output.js', code);
+  fs.writeFileSync(path.resolve(__dirname, './lib/output.js'), code);
 };
 
 // Test
-getModuleInfo('./src/index.js');
+getModuleInfo(path.resolve(__dirname, './src/index.js'));

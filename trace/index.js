@@ -6,9 +6,30 @@ const parser = require('@babel/parser');
 const traverse = require('@babel/traverse').default;
 // 转换
 const babel = require('@babel/core');
-
+// 业务
 const { TRACE_PREFIX, TRACE_NAME } = require('./constants');
 const { collectTraceFragment } = require('./util/fragment');
+
+const createInterceptor = ({ types }) => {
+  return {
+    0: () => {
+      const o = types.arrayExpression([]);
+      const collection = types.variableDeclaration('const', [types.variableDeclarator(types.identifier(TRACE_NAME), o)]);
+      child.insertBefore(collection);
+    },
+    [body.length - 1]: () => {
+      const traceFragment = types.callExpression(
+        types.memberExpression(
+          types.identifier('console'),
+          types.identifier('log')
+        ),
+        [types.identifier(TRACE_NAME)]
+      )
+      const collection = types.expressionStatement(traceFragment);
+      child.insertAfter(collection);
+    }
+  }
+}
 
 // 获得单个文件的依赖
 function getModuleInfo(file) {
@@ -25,22 +46,9 @@ function getModuleInfo(file) {
       const body = path.get("body");
 
       body.forEach((child, index) => {
-        if (index === 0) {
-          const o = types.arrayExpression([]);
-          const collection = types.variableDeclaration('const', 
-            [types.variableDeclarator(types.identifier(TRACE_NAME), o)]);
-          child.insertBefore(collection);
-        }
-        if (index === body.length - 1) {
-          const traceFragment = types.callExpression(
-            types.memberExpression(
-              types.identifier('console'),
-              types.identifier('log')
-            ),
-            [types.identifier(TRACE_NAME)]
-          )
-          const collection = types.expressionStatement(traceFragment);
-          child.insertAfter(collection);
+        const interceptor = createInterceptor({ types });
+        if (typeof interceptor[index] === 'function') {
+          interceptor[index]();
         }
       })
     },

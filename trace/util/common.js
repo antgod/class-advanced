@@ -95,8 +95,19 @@ const findParentPath = (path, { types = []}, child = path) => {
   return findParentPath(path.parentPath, { types }, path);
 }
 
+const findfunctionName = (path) => {
+  const { parentPath } = path;
+  if (parentPath.node.id !== null) {
+    return parentPath.node.id.name
+  } else if (parentPath.parentPath.node.id){
+    return parentPath.parentPath.node.id.name;
+  }
+  return 'test';
+}
+
 module.exports = {
   collectTraceFragment,
   createInterceptor,
   findParentPath,
+  findfunctionName,
 }

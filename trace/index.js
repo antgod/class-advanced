@@ -8,7 +8,7 @@ const traverse = require('@babel/traverse').default;
 const babel = require('@babel/core');
 // 业务
 const { TRACE_NAME } = require('./util/constants');
-const { collectTraceFragment, createInterceptor, findParentPath } = require('./util/common');
+const { collectTraceFragment, createInterceptor, findParentPath, findfunctionName } = require('./util/common');
 
 // 获得单个文件的依赖
 function getModuleInfo(file) {
@@ -64,6 +64,7 @@ function getModuleInfo(file) {
       const { name: leftName } = left;
       const { name: rightName } = right;
       const randomNumber = Math.floor(Math.random() * 100) + "";
+
       if (leftName) {
         const fragment = collectTraceFragment(TRACE_NAME, leftName, { types, type: operator }, { version: randomNumber });
         const finalPath = findParentPath(path, { types: ['ReturnStatement', 'ReturnStatement', 'BinaryExpression', 'CallExpression'] });
@@ -89,6 +90,7 @@ function getModuleInfo(file) {
     CallExpression(path) {
       const { node } = path;
       const { name, object } = node.callee;
+
       if (object) {
 
       } else if (name) {
@@ -99,6 +101,18 @@ function getModuleInfo(file) {
         }
       }
     },
+    BlockStatement(path) {
+      const body = path.get('body');
+      body.forEach((nodePath, index) => {
+        const { type } = nodePath;
+        const fragment = collectTraceFragment(TRACE_NAME, findfunctionName(path), { types, type: 'return' });
+        if (type === 'ReturnStatement') {
+          nodePath.insertBefore(fragment);
+        } else if (index === body.length - 1) {
+          nodePath.insertAfter(fragment);
+        }
+      });
+    }
     // VariableDeclaration(path) {
     //   const { node } = path;
     //   const declarations = node.declarations;

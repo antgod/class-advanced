@@ -33,11 +33,18 @@ var add = function add(num1, num2) {
   });
   b = {};
   my_trace.push({
+    type: "return",
+    key: "add",
+    value: add,
+    params: {},
+    props: {}
+  });
+  my_trace.push({
     type: "+",
     key: "num1",
     value: num1,
     params: {
-      version: "93"
+      version: "96"
     },
     props: {}
   });
@@ -46,7 +53,7 @@ var add = function add(num1, num2) {
     key: "num2",
     value: num2,
     params: {
-      version: "93"
+      version: "96"
     },
     props: {}
   });
@@ -73,11 +80,18 @@ var mul = function mul(oldNum, newNum) {
     props: {}
   });
   my_trace.push({
+    type: "return",
+    key: "mul",
+    value: mul,
+    params: {},
+    props: {}
+  });
+  my_trace.push({
     type: "*",
     key: "oldNum",
     value: oldNum,
     params: {
-      version: "55"
+      version: "94"
     },
     props: {}
   });
@@ -111,6 +125,13 @@ function compute(num1, num2) {
     props: {}
   });
   my_trace.push({
+    type: "return",
+    key: "compute",
+    value: compute,
+    params: {},
+    props: {}
+  });
+  my_trace.push({
     type: "call",
     key: "mul",
     value: mul,
@@ -120,12 +141,13 @@ function compute(num1, num2) {
   return mul(num1, num2);
 }
 
+var finalFun = compute;
 my_trace.push({
   type: "call",
-  key: "compute",
-  value: compute,
+  key: "finalFun",
+  value: finalFun,
   params: {},
   props: {}
 });
-console.log('a :>> ', compute(1, 2));
+console.log('a :>> ', finalFun(1, 2));
 console.log(my_trace);

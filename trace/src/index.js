@@ -12,4 +12,6 @@ function compute(num1, num2) {
   return mul(num1, num2);
 }
 
-console.log('a :>> ', compute(1, 2));
+const finalFun = compute;
+
+console.log('a :>> ', finalFun(1, 2));

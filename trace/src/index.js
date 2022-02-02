@@ -1,17 +1,16 @@
-const add = (num1, num2) => {
-  let b;
-  b = {};
-  return num1 + num2;
-}
+import React from 'react';
 
-const mul = (oldNum, newNum) => {
-  return oldNum * add(oldNum, newNum);
-}
+const Home = () => {
+  const a = 1;
+  const b = 2;
+  return (
+    <Tag
+      key={a}
+      color={PROJECT_COLOR[(a + b) % 4]}
+    >
+      1
+    </Tag>
+  );
+};
 
-function compute(num1, num2) {
-  return mul(num1, num2);
-}
-
-const finalFun = compute;
-
-console.log('a :>> ', finalFun(1, 2));
+Home();

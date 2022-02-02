@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "node ./index.js && node ./lib/output.js"
+    "start": "node ./index.js"
   },
   "devDependencies": {
     "babel-preset-es2015-rollup": "^3.0.0",
@@ -11,6 +11,8 @@
     "rollup-plugin-node-resolve": "^3.0.0"
   },
   "dependencies": {
+    "@babel/plugin-syntax-jsx": "^7.16.0",
+    "@babel/plugin-transform-react-display-name": "^7.16.0",
     "adjust": "^2.1.1"
   }
 }
